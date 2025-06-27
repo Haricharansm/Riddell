@@ -11,6 +11,7 @@ from sklearn.metrics import classification_report
 @st.cache_data
 def load_data():
     df = pd.read_excel("assets/Impact & Collision Data.xlsx")
+    df.columns = df.columns.str.strip()  # Clean column names
     return df.dropna()
 
 @st.cache_resource
@@ -21,13 +22,10 @@ def train_model(df):
                  'temperature', 'humidity']
     target = 'injuryReported'
 
-    df.columns = df.columns.str.strip()  # Clean column names
-
-    # Validate required columns
     expected_columns = categorical + numerical + [target]
     missing = [col for col in expected_columns if col not in df.columns]
     if missing:
-        st.error(f\"❌ Missing columns in dataset: {missing}\")
+        st.error(f"❌ Missing columns in dataset: {missing}")
         return None
 
     X = df[categorical + numerical]
@@ -52,6 +50,9 @@ def run():
     df = load_data()
     model = train_model(df)
 
+    if model is None:
+        st.stop()  # Gracefully stop execution if model training failed
+
     st.subheader("Enter Impact Test Parameters")
 
     input_data = {
@@ -70,13 +71,18 @@ def run():
     }
 
     input_df = pd.DataFrame([input_data])
-    prediction = model.predict(input_df)[0]
-    proba = model.predict_proba(input_df)[0]
 
-    st.success(f"🧠 Predicted Concussion Risk: **{'Yes' if prediction else 'No'}**")
-    st.write("Confidence:", {
-        'No Injury': f"{proba[0]*100:.2f}%",
-        'Injury': f"{proba[1]*100:.2f}%"
-    })
+    try:
+        prediction = model.predict(input_df)[0]
+        proba = model.predict_proba(input_df)[0]
+
+        st.success(f"🧠 Predicted Concussion Risk: **{'Yes' if prediction else 'No'}**")
+        st.write("Confidence:", {
+            'No Injury': f"{proba[0]*100:.2f}%",
+            'Injury': f"{proba[1]*100:.2f}%"
+        })
+    except Exception as e:
+        st.error(f"⚠️ Prediction failed: {e}")
 
     st.caption("Model trained on full historical impact dataset with environmental and biomechanical variables.")
+
