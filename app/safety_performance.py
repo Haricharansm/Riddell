@@ -6,7 +6,7 @@ import shap
 
 @st.cache_data
 def load_data():
-    return pd.read_excel("assets/Safety_Performance_Data.xlsx")
+    return pd.read_excel("assets/Safety Performance Data.xlsx")
 
 def run():
     st.header("Safety Performance Analysis with Explainable AI for Compliance")
