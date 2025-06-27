@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 @st.cache_data
 def load_data():
-    return pd.read_excel("assets/Materials_Testing_Data.xlsx")
+    return pd.read_excel("assets/Materials Testing Data.xlsx")
 
 def run():
     st.header("Materials Analysis with ML Predictions & Optimal Recommendations")
