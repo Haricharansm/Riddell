@@ -17,9 +17,7 @@ def load_data():
 @st.cache_resource
 def train_model(df):
     categorical = ['position', 'helmetModel', 'impactType', 'gamePhase']
-    numerical = ['peakAcceleration', 'duration', 'rotationalVelocity',
-                 'impactLocation.x', 'impactLocation.y', 'impactLocation.z',
-                 'temperature', 'humidity']
+    numerical = ['peakAcceleration', 'duration', 'rotationalVelocity', 'temperature', 'humidity']
     target = 'injuryReported'
 
     expected_columns = categorical + numerical + [target]
