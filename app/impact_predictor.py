@@ -21,6 +21,15 @@ def train_model(df):
                  'temperature', 'humidity']
     target = 'injuryReported'
 
+    df.columns = df.columns.str.strip()  # Clean column names
+
+    # Validate required columns
+    expected_columns = categorical + numerical + [target]
+    missing = [col for col in expected_columns if col not in df.columns]
+    if missing:
+        st.error(f\"❌ Missing columns in dataset: {missing}\")
+        return None
+
     X = df[categorical + numerical]
     y = df[target]
 
