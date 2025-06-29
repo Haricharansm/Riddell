@@ -5,10 +5,10 @@ from fpdf import FPDF
 
 @st.cache_data
 def load_all_data():
-    fit_df = pd.read_excel("assets/Player_Fit_Comfort_Data.xlsx")
+    fit_df = pd.read_excel("assets/Player Fit & Comfort Data.xlsx")
     impact_df = pd.read_excel("assets/Impact & Collision Data.xlsx")
-    materials_df = pd.read_excel("assets/Materials_Testing_Data.xlsx")
-    safety_df = pd.read_excel("assets/Safety_Performance_Data.xlsx")
+    materials_df = pd.read_excel("assets/Materials Testing Data.xlsx")
+    safety_df = pd.read_excel("assets/Safety Performance Data.xlsx")
     return fit_df, impact_df, materials_df, safety_df
 
 def run():
