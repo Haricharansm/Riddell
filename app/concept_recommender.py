@@ -24,7 +24,6 @@ def run():
     st.subheader("Generating ML-based concept recommendations")
 
     # Merge relevant dataframes for clustering analysis
-    # For simplicity, join on helmetSize as a common feature (adapt based on real schema)
     merged_df = pd.merge(fit_df, materials_df, how='cross')
 
     # Select features for clustering
@@ -67,11 +66,9 @@ def run():
     st.dataframe(concept_df)
 
     # Natural language summary output
-st.subheader("📢 Concept Recommendations Summary (Natural Language)")
+    st.subheader("📢 Concept Recommendations Summary (Natural Language)")
 
-if not concept_df.empty:
-        st.subheader("📢 Concept Recommendations Summary (Natural Language)")
-
+    if not concept_df.empty:
         for idx, row in concept_df.iterrows():
             recommendation = (
                 f"**Cluster {row['Cluster']} Recommendation:**  \n"
@@ -86,3 +83,4 @@ if not concept_df.empty:
             st.markdown(recommendation)
     else:
         st.warning("No concept recommendations generated. Adjust data inputs or clustering parameters.")
+
