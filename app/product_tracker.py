@@ -1,63 +1,92 @@
 import streamlit as st
 import pandas as pd
 from datetime import date
-
-# Dummy concepts for demonstration (replace with top voted concepts if integrating live)
-concepts = [
-    {'Cluster': 0, 'Helmet Size': 'Medium', 'Foam Type': 'Foam B', 'Shell Material': 'Polycarbonate'},
-    {'Cluster': 1, 'Helmet Size': 'Large', 'Foam Type': 'Foam C', 'Shell Material': 'ABS'}
-]
+from app import db_utils
+import sqlite3
 
 lifecycle_stages = ["Concept", "Design", "Prototype", "Testing", "Production"]
 
 def run():
     st.header("🗂️ Project Lifecycle Tracker Module")
 
+    db_utils.initialize_db()
+
+    conn = db_utils.create_connection()
+    cursor = conn.cursor()
+
     # Load top voted concepts from session state
     top_concepts = st.session_state.get('top_voted_concepts', [])
 
-    # Initialize projects in session state if not existing
-    if 'projects' not in st.session_state:
-        st.session_state.projects = []
-        for concept in concepts:
-            st.session_state.projects.append({
-                'Cluster': concept['Cluster'],
-                'Helmet Size': concept['Helmet Size'],
-                'Foam Type': concept['Foam Type'],
-                'Shell Material': concept['Shell Material'],
-                'Stage': 'Concept',
-                'Owner': '',
-                'Target Date': date.today(),
-                'Status Notes': ''
-            })
+    # Insert top voted concepts into DB if not already present
+    for concept in top_concepts:
+        cursor.execute("""
+            SELECT COUNT(*) FROM projects WHERE cluster = ? AND helmet_size = ?
+        """, (concept['Cluster'], concept['Helmet Size']))
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT INTO projects (cluster, helmet_size, foam_type, shell_material, stage, owner, target_date, status_notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                concept['Cluster'],
+                concept['Helmet Size'],
+                concept['Foam Type'],
+                concept['Shell Material'],
+                'Concept',
+                '',
+                date.today().isoformat(),
+                ''
+            ))
+    conn.commit()
 
-    # Display and manage each project
-    for idx, project in enumerate(st.session_state.projects):
-        st.subheader(f"Project Cluster {project['Cluster']} - {project['Helmet Size']} Helmet")
+    # Fetch all projects
+    df = pd.read_sql_query("SELECT * FROM projects", conn)
+
+    # Display and edit each project
+    for idx, project in df.iterrows():
+        st.subheader(f"Project Cluster {project['cluster']} - {project['helmet_size']} Helmet")
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            project['Stage'] = st.selectbox(
-                f"Stage for Cluster {project['Cluster']}",
+            new_stage = st.selectbox(
+                f"Stage for Cluster {project['cluster']}",
                 lifecycle_stages,
-                index=lifecycle_stages.index(project['Stage'])
+                index=lifecycle_stages.index(project['stage'])
             )
         with col2:
-            project['Owner'] = st.text_input(f"Owner for Cluster {project['Cluster']}", value=project['Owner'])
+            new_owner = st.text_input(f"Owner for Cluster {project['cluster']}", value=project['owner'])
         with col3:
-            project['Target Date'] = st.date_input(f"Target Date for Cluster {project['Cluster']}", value=project['Target Date'])
+            new_date = st.date_input(f"Target Date for Cluster {project['cluster']}", value=pd.to_datetime(project['target_date']))
 
-        project['Status Notes'] = st.text_area(
-            f"Status Notes for Cluster {project['Cluster']}",
-            value=project['Status Notes']
+        new_notes = st.text_area(
+            f"Status Notes for Cluster {project['cluster']}",
+            value=project['status_notes']
         )
+
+        # Update changes in DB
+        if st.button(f"Save Updates for Cluster {project['cluster']}"):
+            cursor.execute("""
+                UPDATE projects
+                SET stage = ?, owner = ?, target_date = ?, status_notes = ?
+                WHERE id = ?
+            """, (
+                new_stage,
+                new_owner,
+                new_date.isoformat(),
+                new_notes,
+                project['id']
+            ))
+            conn.commit()
+            st.success("Project updated successfully.")
 
         st.markdown("---")
 
-    # Display project summary table
+    # Display full project portfolio
     st.subheader("📊 Project Portfolio Summary")
+    df_updated = pd.read_sql_query("SELECT * FROM projects", conn)
+    st.dataframe(df_updated)
 
-    project_df = pd.DataFrame(st.session_state.projects)
-    st.dataframe(project_df)
+    conn.close()
 
-    st.caption("⚠️ Data is stored in Streamlit session state for demo purposes. For production, integrate with SQLite or cloud database for persistence.")
+    st.caption("✅ Data is now stored persistently in SQLite for reliable project tracking.")
+
+    
