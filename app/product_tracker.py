@@ -13,6 +13,9 @@ lifecycle_stages = ["Concept", "Design", "Prototype", "Testing", "Production"]
 def run():
     st.header("🗂️ Project Lifecycle Tracker Module")
 
+    # Load top voted concepts from session state
+    top_concepts = st.session_state.get('top_voted_concepts', [])
+
     # Initialize projects in session state if not existing
     if 'projects' not in st.session_state:
         st.session_state.projects = []
