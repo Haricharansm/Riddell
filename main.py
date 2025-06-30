@@ -14,7 +14,7 @@ tabs = st.tabs([
     "Testing Dashboard",
     "Feedback Analyzer",
     "Concept Recommendations"
-    "Voting"
+    "Voting & Prioritization"
 ])
 
 with tabs[0]:
