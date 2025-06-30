@@ -46,5 +46,9 @@ def run():
 
     st.dataframe(ranked_df)
 
+    # Store top N concepts for project tracker
+    top_n = 3  # Adjust as needed
+    st.session_state['top_voted_concepts'] = ranked_df.head(top_n).to_dict(orient='records')
+
     st.caption("⚠️ Votes are stored in Streamlit session state for demo purposes. For production, integrate with a persistent database.")
 
