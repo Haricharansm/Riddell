@@ -14,6 +14,7 @@ tabs = st.tabs([
     "Testing Dashboard",
     "Feedback Analyzer",
     "Concept Recommendations"
+    "Voting"
 ])
 
 with tabs[0]:
@@ -30,4 +31,7 @@ with tabs[3]:
 
 with tabs[4]:
     concept_recommender.run()
+
+with tabs[5]:
+    voting.run()
 
