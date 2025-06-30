@@ -14,7 +14,8 @@ tabs = st.tabs([
     "Testing Dashboard",
     "Feedback Analyzer",
     "Concept Recommendations",
-    "Voting & Prioritization"
+    "Voting & Prioritization",
+    "Product Lifecycle Tracker"
 ])
 
 with tabs[0]:
@@ -35,4 +36,6 @@ with tabs[4]:
 with tabs[5]:
     voting.run()
 
+with tabs[6]:
+    product_tracker.run()
 
