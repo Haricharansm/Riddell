@@ -66,5 +66,21 @@ def run():
     concept_df = pd.DataFrame(concepts)
     st.dataframe(concept_df)
 
+    # Natural language summary output
+st.subheader("📢 Concept Recommendations Summary (Natural Language)")
+
+for idx, row in concept_df.iterrows():
+    recommendation = (
+        f"**Cluster {row['Cluster']} Recommendation:**  \n"
+        f"We recommend developing a **{row['Helmet Size']} helmet** using **{row['Foam Type']} foam** "
+        f"combined with a **{row['Shell Material']} shell**. "
+        f"This design offers an average comfort rating of **{row['Avg Comfort Rating']:.1f}**, "
+        f"durability score of **{row['Avg Durability']:.1f}**, "
+        f"and energy absorption of **{row['Avg Energy Absorption']:.1f}**, "
+        f"with temperature stability of **{row['Avg Temp Stability']:.1f}**. "
+        f"This concept is positioned to enhance player comfort while maintaining strong impact protection and material resilience."
+    )
+    st.markdown(recommendation)
+
     st.caption("⚠️ Prototype uses KMeans clustering on fit comfort and material performance. Future upgrades will integrate Generative AI design suggestions with manufacturability constraints.")
 
