@@ -1,7 +1,9 @@
 import streamlit as st
 from app import fit_optimizer, impact_predictor, dashboard, feedback_nlp, concept_recommender, voting, product_tracker, admin_approval
+from app import copilot
 
 st.set_page_config(page_title="Riddell AI Helmet R&D", layout="wide")
+copilot.run()
 
 # ------------------ LOGIN ------------------
 if "role" not in st.session_state:
