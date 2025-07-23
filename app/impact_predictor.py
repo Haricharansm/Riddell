@@ -6,12 +6,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import classification_report
 
 @st.cache_data
 def load_data():
     df = pd.read_excel("assets/Impact & Collision Data.xlsx")
-    df.columns = df.columns.str.strip()  # Clean column names
+    df.columns = df.columns.str.strip()
     return df.dropna()
 
 @st.cache_resource
@@ -43,44 +42,71 @@ def train_model(df):
     return clf
 
 def run():
-    st.header("Impact Risk Predictor")
+    st.header("🚨 Impact Risk Predictor")
+
+    role = st.session_state.get("user_role", "analyst")  # 'executive', 'trainer', 'analyst'
 
     df = load_data()
     model = train_model(df)
 
     if model is None:
-        st.stop()  # Gracefully stop execution if model training failed
+        st.stop()
 
-    st.subheader("Enter Impact Test Parameters")
+    with st.form("impact_form"):
+        st.subheader("🏈 Player & Scenario Details")
+        col1, col2 = st.columns(2)
+        with col1:
+            position = st.selectbox("Player Position", df['position'].unique())
+            helmet_model = st.selectbox("Helmet Model", df['helmetModel'].unique())
+        with col2:
+            impact_type = st.selectbox("Impact Type", df['impactType'].unique())
+            game_phase = st.selectbox("Game Phase", df['gamePhase'].unique())
 
-    input_data = {
-        'position': st.selectbox("Player Position", df['position'].unique()),
-        'helmetModel': st.selectbox("Helmet Model", df['helmetModel'].unique()),
-        'impactType': st.selectbox("Impact Type", df['impactType'].unique()),
-        'gamePhase': st.selectbox("Game Phase", df['gamePhase'].unique()),
-        'peakAcceleration': st.slider("Peak Acceleration (g)", 30.0, 150.0, 75.0),
-        'duration': st.slider("Impact Duration (ms)", 1, 100, 30),
-        'rotationalVelocity': st.slider("Rotational Velocity (rad/s)", 0.0, 100.0, 45.0),
-        'impactLocation.x': st.slider("Impact X", -1.0, 1.0, 0.0),
-        'impactLocation.y': st.slider("Impact Y", -1.0, 1.0, 0.0),
-        'impactLocation.z': st.slider("Impact Z", -1.0, 1.0, 0.0),
-        'temperature': st.slider("Temperature (°C)", -10.0, 50.0, 20.0),
-        'humidity': st.slider("Humidity (%)", 0.0, 100.0, 50.0)
-    }
+        st.subheader("📐 Biomechanical & Environmental Metrics")
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            peak_accel = st.slider("Peak Acceleration (g)", 30.0, 150.0, 75.0)
+            duration = st.slider("Impact Duration (ms)", 1, 100, 30)
+        with col4:
+            rotational_velocity = st.slider("Rotational Velocity (rad/s)", 0.0, 100.0, 45.0)
+            temperature = st.slider("Temperature (°C)", -10.0, 50.0, 20.0)
+        with col5:
+            humidity = st.slider("Humidity (%)", 0.0, 100.0, 50.0)
 
-    input_df = pd.DataFrame([input_data])
+        submitted = st.form_submit_button("🧠 Predict Risk")
 
-    try:
-        prediction = model.predict(input_df)[0]
-        proba = model.predict_proba(input_df)[0]
+    if submitted:
+        input_df = pd.DataFrame([{
+            'position': position,
+            'helmetModel': helmet_model,
+            'impactType': impact_type,
+            'gamePhase': game_phase,
+            'peakAcceleration': peak_accel,
+            'duration': duration,
+            'rotationalVelocity': rotational_velocity,
+            'temperature': temperature,
+            'humidity': humidity
+        }])
 
-        st.success(f"🧠 Predicted Concussion Risk: **{'Yes' if prediction else 'No'}**")
-        st.write("Confidence:", {
-            'No Injury': f"{proba[0]*100:.2f}%",
-            'Injury': f"{proba[1]*100:.2f}%"
-        })
-    except Exception as e:
-        st.error(f"⚠️ Prediction failed: {e}")
+        try:
+            prediction = model.predict(input_df)[0]
+            proba = model.predict_proba(input_df)[0]
 
-    st.caption("Model trained on full historical impact dataset with environmental and biomechanical variables.")
+            st.success(f"🎯 Predicted Concussion Risk: **{'Yes' if prediction else 'No'}**")
+            st.metric("No Injury Confidence", f"{proba[0]*100:.2f}%")
+            st.metric("Injury Risk Confidence", f"{proba[1]*100:.2f}%")
 
+            if role in ["analyst", "trainer"]:
+                st.info("ℹ️ Consider re-running with alternate helmets or reducing peak acceleration for better outcomes.")
+
+            if role == "executive":
+                st.markdown("""
+                    ### Recommendation:
+                    - High injury risk → re-evaluate helmet model or position-specific fit
+                    - Consider enhanced training protocols or playstyle adjustments
+                """)
+
+        except Exception as e:
+            st.error(f"⚠️ Prediction failed: {e}")
+
+    st.caption("📊 Model trained using Random Forest on historical game impact data.")
