@@ -9,7 +9,7 @@ if "role" not in st.session_state:
     user = st.selectbox("Select your role", ["R&D Lead", "Analyst", "Engineer"])
     if st.button("Login"):
         st.session_state.role = user
-        st.experimental_rerun()
+        st.rerun()
     st.stop()
 
 # ------------------ HEADER ------------------
