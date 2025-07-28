@@ -3,16 +3,23 @@ import pandas as pd
 
 def run():
     st.sidebar.title("🧠 Smart Assistant")
+
+    uploaded_file = st.sidebar.file_uploader("Upload Excel file", type=["xlsx"])
+
+    if uploaded_file is None:
+        st.sidebar.info("Please upload the Player Fit & Comfort Excel file to begin.")
+        return
+
     question = st.sidebar.text_input("Ask a question about helmet fit and comfort...")
 
-    # Load and preprocess the data
+    # Load and preprocess the uploaded file
     @st.cache_data
-    def load_data():
-        df = pd.read_excel("Player Fit & Comfort Data.xlsx")
+    def load_data(file):
+        df = pd.read_excel(file)
         df.columns = [col.strip().replace(" ", "_").lower() for col in df.columns]
         return df
 
-    df = load_data()
+    df = load_data(uploaded_file)
 
     # Logic to handle questions
     if st.sidebar.button("Ask"):
@@ -25,16 +32,24 @@ def run():
 
         if "low fit score" in q or "poor fit" in q:
             low_fit = df[df['fitscore'] < 80]
-            answer = f"There are {len(low_fit)} players with a fit score below 80. Consider checking their helmet size and pressure points."
+            if len(low_fit) == 0:
+                answer = "All players have fit scores above 80."
+            else:
+                player_list = ", ".join(low_fit['id'].tolist())
+                answer = f"The following players have fit scores below 80: {player_list}"
 
         elif "pressure point" in q:
             high_pressure = df[df['pressurepoints'] > 2]
-            answer = f"{len(high_pressure)} players had more than 2 pressure points. Common positions include: {', '.join(high_pressure['position'].unique())}"
+            if len(high_pressure) == 0:
+                answer = "No players had more than 2 pressure points."
+            else:
+                players = ", ".join(high_pressure['id'].tolist())
+                answer = f"{len(high_pressure)} players had more than 2 pressure points: {players}"
 
         elif "most adjustments" in q:
             max_adj = df['adjustmentsmade'].max()
-            players = df[df['adjustmentsmade'] == max_adj]
-            answer = f"Player(s) with most adjustments ({max_adj}): {', '.join(players['id'])}"
+            players = df[df['adjustmentsmade'] == max_adj]['id'].tolist()
+            answer = f"Player(s) with the most adjustments ({max_adj}): {', '.join(players)}"
 
         elif "comfort rating" in q and "position" in q:
             avg_comfort = df.groupby('position')['comfortrating'].mean().sort_values(ascending=False)
