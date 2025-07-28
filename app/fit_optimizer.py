@@ -52,7 +52,30 @@ def run():
             if role in ["analyst", "executive"]:
                 with st.expander("📊 Show Matching Records"):
                     st.dataframe(filtered_df)
+
         else:
-            st.warning("⚠️ No exact match found. Try adjusting the tolerance or scan actual head shape data.")
+            st.warning("⚠️ No exact match found. Showing top 3 closest matches instead:")
+
+            # Compute Euclidean distance to find closest matches
+            df['distance'] = (
+                (df['headCircumference'] - head_circumference) ** 2 +
+                (df['headLength'] - head_length) ** 2 +
+                (df['headWidth'] - head_width) ** 2
+            ) ** 0.5
+
+            top_matches = df.sort_values(by='distance').head(3)
+
+            for i, row in top_matches.iterrows():
+                st.info(
+                    f"🔍 Alternative {i + 1}: Helmet Size **{row['helmetSize']}**\n\n"
+                    f"- Fit Score: {row['fitScore']}\n"
+                    f"- Comfort Rating: {row['comfortRating']}\n"
+                    f"- Pressure Points: {row['pressurePoints']}\n"
+                    f"- Chin Strap Tension: {row['chinStrapTension']}\n"
+                )
+
+            if role in ["analyst", "executive"]:
+                with st.expander("📊 Show Closest Matching Records"):
+                    st.dataframe(top_matches.drop(columns=["distance"]))
 
     st.caption("🔬 This module uses historical player fit & comfort data from Riddell helmet trials.")
