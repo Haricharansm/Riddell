@@ -2,24 +2,27 @@
 import streamlit as st
 import pandas as pd
 import re
-from textblob import TextBlob
+
+# Simple sentiment dictionaries
+POSITIVE_WORDS = {"good", "great", "excellent", "comfortable", "lightweight", "love", "perfect", "well-fitting"}
+NEGATIVE_WORDS = {"bad", "poor", "uncomfortable", "tight", "loose", "pain", "hurt", "discomfort", "heavy", "hate"}
 
 def analyze_feedback(feedback_text):
-    """Extract sentiment and key themes from customer feedback without NLTK."""
+    """Extract sentiment and key themes from customer feedback without NLTK or TextBlob."""
     
-    # --- Sentiment Analysis ---
-    blob = TextBlob(feedback_text)
-    sentiment = blob.sentiment.polarity  # -1 (negative) to +1 (positive)
+    words = re.findall(r'\b\w+\b', feedback_text.lower())
+    positive_count = sum(1 for w in words if w in POSITIVE_WORDS)
+    negative_count = sum(1 for w in words if w in NEGATIVE_WORDS)
 
-    if sentiment > 0.2:
+    # Determine sentiment
+    if positive_count > negative_count:
         sentiment_label = "😊 Positive"
-    elif sentiment < -0.2:
+    elif negative_count > positive_count:
         sentiment_label = "⚠️ Negative"
     else:
         sentiment_label = "😐 Neutral"
 
-    # --- Keyword Extraction (simple frequency) ---
-    words = re.findall(r'\b\w+\b', feedback_text.lower())
+    # Common helmet-related issues
     common_issues = [w for w in words if w in [
         "fit", "comfort", "tight", "loose", "strap", "foam", "pressure",
         "durability", "impact", "chin", "ventilation", "weight"
@@ -32,8 +35,6 @@ def analyze_feedback(feedback_text):
 
 def run():
     st.header("🗣️ Customer Feedback Insights")
-
-    st.write("Upload player/customer feedback to extract insights and sentiment.")
 
     uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
     if uploaded_file:
@@ -60,7 +61,7 @@ def run():
         results_df = pd.DataFrame(results)
         st.dataframe(results_df)
 
-        # --- Summary KPI ---
+        # Summary KPIs
         positive_count = (results_df['Sentiment'] == "😊 Positive").sum()
         negative_count = (results_df['Sentiment'] == "⚠️ Negative").sum()
         neutral_count = (results_df['Sentiment'] == "😐 Neutral").sum()
@@ -69,10 +70,16 @@ def run():
         st.metric("Negative Feedback", negative_count)
         st.metric("Neutral Feedback", neutral_count)
 
-        # --- Insights Summary ---
+        # Insights Summary
         st.subheader("💡 Overall Insights")
-        st.write(f"Players report common issues with: **{', '.join(results_df['Key Themes'].unique())}**")
-        st.caption("Insights derived from historical Riddell helmet trial feedback.")
+        all_keywords = set()
+        for kw in results_df['Key Themes']:
+            if kw != "N/A":
+                all_keywords.update(kw.split(", "))
+        if all_keywords:
+            st.write(f"Players report common issues with: **{', '.join(all_keywords)}**")
+        else:
+            st.write("No recurring issues found in feedback.")
 
     else:
         st.info("⬆️ Please upload a feedback CSV file to begin analysis.")
