@@ -9,7 +9,9 @@ NEGATIVE_WORDS = {"bad", "poor", "uncomfortable", "tight", "loose", "pain", "hur
 
 def analyze_feedback(feedback_text):
     """Extract sentiment and key themes from customer feedback without NLTK or TextBlob."""
-    
+    if not feedback_text.strip():
+        return "😐 Neutral", []
+
     words = re.findall(r'\b\w+\b', feedback_text.lower())
     positive_count = sum(1 for w in words if w in POSITIVE_WORDS)
     negative_count = sum(1 for w in words if w in NEGATIVE_WORDS)
@@ -36,7 +38,19 @@ def analyze_feedback(feedback_text):
 def run():
     st.header("🗣️ Customer Feedback Insights")
 
-    uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
+    # --- Option 1: Single text feedback ---
+    st.subheader("✍️ Enter Single Feedback for Quick Analysis")
+    single_feedback = st.text_area("Enter feedback text here...")
+    if st.button("Analyze Feedback"):
+        sentiment_label, keywords = analyze_feedback(single_feedback)
+        st.write(f"**Sentiment:** {sentiment_label}")
+        st.write(f"**Key Themes:** {', '.join(keywords) if keywords else 'N/A'}")
+
+    st.markdown("---")
+
+    # --- Option 2: CSV upload ---
+    st.subheader("📂 Upload CSV for Bulk Analysis")
+    uploaded_file = st.file_uploader("Upload CSV (must contain a 'feedback' column)", type=["csv"])
     if uploaded_file:
         try:
             df = pd.read_csv(uploaded_file)
@@ -48,7 +62,7 @@ def run():
             st.error("❌ CSV must have a 'feedback' column.")
             return
 
-        st.subheader("📊 Feedback Analysis")
+        st.subheader("📊 Bulk Feedback Analysis")
         results = []
         for feedback in df['feedback'].dropna():
             sentiment_label, keywords = analyze_feedback(feedback)
@@ -82,4 +96,4 @@ def run():
             st.write("No recurring issues found in feedback.")
 
     else:
-        st.info("⬆️ Please upload a feedback CSV file to begin analysis.")
+        st.info("⬆️ Please upload a feedback CSV file or enter text above to analyze.")
