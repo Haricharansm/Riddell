@@ -1,43 +1,78 @@
+# app/feedback_nlp.py
 import streamlit as st
-import nltk
-from nltk.sentiment import SentimentIntensityAnalyzer
-from nltk import word_tokenize
+import pandas as pd
+import re
+from textblob import TextBlob
 
-# Add NLTK data path (optional, but helps if we pre-bundle)
-nltk.data.path.append('./nltk_data')
+def analyze_feedback(feedback_text):
+    """Extract sentiment and key themes from customer feedback without NLTK."""
+    
+    # --- Sentiment Analysis ---
+    blob = TextBlob(feedback_text)
+    sentiment = blob.sentiment.polarity  # -1 (negative) to +1 (positive)
 
-# Download only if missing
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
+    if sentiment > 0.2:
+        sentiment_label = "😊 Positive"
+    elif sentiment < -0.2:
+        sentiment_label = "⚠️ Negative"
+    else:
+        sentiment_label = "😐 Neutral"
 
-try:
-    nltk.data.find('sentiment/vader_lexicon')
-except LookupError:
-    nltk.download('vader_lexicon')
+    # --- Keyword Extraction (simple frequency) ---
+    words = re.findall(r'\b\w+\b', feedback_text.lower())
+    common_issues = [w for w in words if w in [
+        "fit", "comfort", "tight", "loose", "strap", "foam", "pressure",
+        "durability", "impact", "chin", "ventilation", "weight"
+    ]]
+    
+    keywords_found = list(set(common_issues))
+
+    return sentiment_label, keywords_found
+
 
 def run():
-    st.header("Player & Coach Feedback Analyzer with NLP")
+    st.header("🗣️ Customer Feedback Insights")
 
-    feedback = st.text_area("Enter Player or Coach Feedback")
+    st.write("Upload player/customer feedback to extract insights and sentiment.")
 
-    if feedback:
-        st.subheader("Keyword Extraction")
-        tokens = word_tokenize(feedback)
-        st.write(list(set(tokens)))
+    uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
+    if uploaded_file:
+        try:
+            df = pd.read_csv(uploaded_file)
+        except Exception:
+            st.error("❌ Failed to read CSV file. Ensure it's in proper format.")
+            return
 
-        st.subheader("Sentiment Scoring")
-        sia = SentimentIntensityAnalyzer()
-        sentiment = sia.polarity_scores(feedback)
-        st.write(sentiment)
+        if 'feedback' not in df.columns:
+            st.error("❌ CSV must have a 'feedback' column.")
+            return
 
-        st.subheader("Overall Insight")
-        if sentiment['compound'] > 0.2:
-            st.success("Positive Feedback")
-        elif sentiment['compound'] < -0.2:
-            st.error("Negative Feedback")
-        else:
-            st.warning("Neutral Feedback")
+        st.subheader("📊 Feedback Analysis")
+        results = []
+        for feedback in df['feedback'].dropna():
+            sentiment_label, keywords = analyze_feedback(feedback)
+            results.append({
+                "Feedback": feedback,
+                "Sentiment": sentiment_label,
+                "Key Themes": ", ".join(keywords) if keywords else "N/A"
+            })
+
+        results_df = pd.DataFrame(results)
+        st.dataframe(results_df)
+
+        # --- Summary KPI ---
+        positive_count = (results_df['Sentiment'] == "😊 Positive").sum()
+        negative_count = (results_df['Sentiment'] == "⚠️ Negative").sum()
+        neutral_count = (results_df['Sentiment'] == "😐 Neutral").sum()
+
+        st.metric("Positive Feedback", positive_count)
+        st.metric("Negative Feedback", negative_count)
+        st.metric("Neutral Feedback", neutral_count)
+
+        # --- Insights Summary ---
+        st.subheader("💡 Overall Insights")
+        st.write(f"Players report common issues with: **{', '.join(results_df['Key Themes'].unique())}**")
+        st.caption("Insights derived from historical Riddell helmet trial feedback.")
+
     else:
-        st.info("Please enter feedback for analysis.")
+        st.info("⬆️ Please upload a feedback CSV file to begin analysis.")
